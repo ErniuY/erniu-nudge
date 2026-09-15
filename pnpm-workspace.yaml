@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# 依赖安装校验会在脚本执行前触发，此处关闭以免阻塞 test / typecheck
+verifyDepsBeforeRun: false
+allowBuilds:
+  esbuild: true

@@ -1,0 +1,16 @@
+{
+  "name": "erniu-nudge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "可自定义的 Windows 桌面提醒器，内核为跨平台纯 TS",
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

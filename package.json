@@ -6,7 +6,10 @@
   "description": "可自定义的 Windows 桌面提醒器，内核为跨平台纯 TS",
   "scripts": {
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --filter @app/desktop dev",
+    "build:win": "pnpm --filter @app/desktop build:win",
+    "icons": "pnpm --filter @app/desktop icons"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

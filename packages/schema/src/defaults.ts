@@ -47,7 +47,9 @@ export function standUpTemplate(): Reminder {
       cooldownMinutes: 10,
       catchUpMinutes: 5,
       maxPerDay: 10,
-      activeWindow: { days: [1, 2, 3, 4, 5], from: '09:00', to: '18:30' },
+      // 用「中国工作日」而不是「周一到周五」：调休的周六要提醒，放假的周一如要静默
+      calendar: 'china-workday',
+      activeWindow: { days: [0, 1, 2, 3, 4, 5, 6], from: '09:00', to: '18:30' },
     },
     title: '该站起来了',
     message: '你已经连续坐了 {elapsed} 分钟，起来走两分钟吧。',
@@ -84,7 +86,8 @@ export function drinkWaterTemplate(): Reminder {
       cooldownMinutes: 5,
       catchUpMinutes: 5,
       maxPerDay: 8,
-      activeWindow: { days: [1, 2, 3, 4, 5], from: '09:00', to: '18:00' },
+      calendar: 'china-workday',
+      activeWindow: { days: [0, 1, 2, 3, 4, 5, 6], from: '09:00', to: '18:00' },
     },
     title: '该喝水了',
     message: '补充一杯水，顺便活动一下肩颈。',
@@ -111,6 +114,7 @@ export function medicationTemplate(): Reminder {
       at: ['08:00', '20:00'],
       cooldownMinutes: 0,
       catchUpMinutes: 120, // 错过了也要补提醒：电脑睡眠不该导致漏吃药
+      calendar: 'all', // 吃药不分工作日
     },
     title: '该吃药了',
     message: '别忘了按时服药。',

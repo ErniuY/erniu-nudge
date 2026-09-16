@@ -28,13 +28,19 @@ export function standUp(
     maxPerDay: 10,
     activeWindow: undefined,
     catchUpMinutes: 5,
+    calendar: 'all',
     ...extras,
   });
 }
 
 export function dailyAt(
   at: string[],
-  extras: Partial<{ catchUpMinutes: number; cooldownMinutes: number; maxPerDay: number }> = {},
+  extras: Partial<{
+    catchUpMinutes: number;
+    cooldownMinutes: number;
+    maxPerDay: number;
+    calendar: 'all' | 'china-workday';
+  }> = {},
 ): Reminder {
   const reminder = makeReminder({
     type: 'dailyAt',
@@ -42,6 +48,7 @@ export function dailyAt(
     cooldownMinutes: 0,
     activeWindow: undefined,
     catchUpMinutes: 5,
+    calendar: 'all',
     ...extras,
   });
   return withoutEscalation(reminder);
@@ -54,6 +61,7 @@ export function interval(everyMinutes: number): Reminder {
     cooldownMinutes: 5,
     activeWindow: undefined,
     catchUpMinutes: 5,
+    calendar: 'all',
   }));
 }
 

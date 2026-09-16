@@ -6,3 +6,6 @@ packages:
 verifyDepsBeforeRun: false
 allowBuilds:
   esbuild: true
+  # Electron 的 postinstall 负责下载那个 ~100MB 的运行时。被拦下的话
+  # 包会装上但跑不起来，报 "Electron failed to install correctly"。
+  electron: true

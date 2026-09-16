@@ -11,8 +11,17 @@ export const zActiveWindow = z.object({
   to: zHHmm,
 });
 
+/**
+ * 生效日期的日历类型。
+ * china-workday 需要外部注入的节假日日历（含调休），内核只认接口、不认识具体数据源。
+ */
+export const zCalendarKind = z.enum(['all', 'china-workday']).default('all');
+export type CalendarKind = z.infer<typeof zCalendarKind>;
+
 const triggerBase = {
   activeWindow: zActiveWindow.optional(),
+  /** 只在这些日子生效；与 activeWindow 是「同时满足」的关系 */
+  calendar: zCalendarKind,
   cooldownMinutes: z.number().int().min(0).max(1440).default(5),
   maxPerDay: z.number().int().min(1).max(200).optional(),
   /**

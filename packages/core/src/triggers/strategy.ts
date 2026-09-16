@@ -1,5 +1,6 @@
 import type { GlobalSettings, Reminder, Trigger } from '@app/schema';
 import type { ReminderRuntime, TemplateVariables } from '../types';
+import type { WorkdayCalendar } from '../calendar';
 import { formatClockTime } from '../localTime';
 
 export interface TriggerContext {
@@ -9,6 +10,8 @@ export interface TriggerContext {
   activeSeconds: number;
   runtime: ReminderRuntime;
   settings: GlobalSettings;
+  /** 工作日日历；触发器一般不直接用，由引擎在调用前拦截 */
+  calendar: WorkdayCalendar | null;
 }
 
 export type TriggerDecision = { kind: 'fire' } | { kind: 'none' };

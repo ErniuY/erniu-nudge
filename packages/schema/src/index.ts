@@ -1,6 +1,7 @@
 export {
   zHHmm,
   zActiveWindow,
+  zCalendarKind,
   zTrigger,
   zAssetRef,
   zReminderAction,
@@ -21,6 +22,7 @@ export type {
   EscalationStep,
   OverlayCorner,
   DndPolicy,
+  CalendarKind,
 } from './reminder';
 
 export { zGlobalSettings, zAssetEntry, zAppConfig, parseConfig } from './config';

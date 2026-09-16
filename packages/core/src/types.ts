@@ -1,5 +1,6 @@
 import type { GlobalSettings, Reminder } from '@app/schema';
 import type { Clock } from './clock';
+import type { WorkdayCalendar } from './calendar';
 
 /**
  * 每条提醒的运行期状态。默认不落盘，进程重启后按当前时间重建；
@@ -71,4 +72,6 @@ export interface EngineOptions {
    * 用函数而非对象：界面改完配置后引擎立刻读到最新值，无需重建引擎。
    */
   getConfig: () => EngineConfig;
+  /** 工作日日历；不传表示「不按工作日限制」 */
+  calendar?: WorkdayCalendar | null;
 }

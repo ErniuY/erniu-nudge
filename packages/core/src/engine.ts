@@ -10,6 +10,7 @@ import type {
 import type { TriggerContext } from './triggers';
 import { strategyFor } from './triggers';
 import { zonedParts } from './localTime';
+import { matchesCalendar, type WorkdayCalendar } from './calendar';
 
 /**
  * 调度引擎。双模式：
@@ -27,8 +28,11 @@ export class ReminderEngine {
   private activeSeconds = 0;
   private idleSeconds = 0;
   private lastTickAt: number | null = null;
+  private readonly calendar: WorkdayCalendar | null;
 
-  constructor(private readonly opts: EngineOptions) {}
+  constructor(private readonly opts: EngineOptions) {
+    this.calendar = opts.calendar ?? null;
+  }
 
   // ---------------------------------------------------------------- 实时模式
 
@@ -50,6 +54,11 @@ export class ReminderEngine {
 
       const runtime = this.runtimeFor(reminder, now);
       this.rollDayIfNeeded(runtime, now);
+
+      // 生效日期（例如「中国工作日」）不满足就整条跳过。
+      // 放在引擎层而不是触发器里，是为了让六种触发器共用同一套判断。
+      if (!this.withinCalendar(reminder, now)) continue;
+
       const ctx = this.contextFor(now, runtime, global);
       const strategy = strategyFor(reminder.trigger.type);
 
@@ -90,6 +99,7 @@ export class ReminderEngine {
       const strategy = strategyFor(reminder.trigger.type);
 
       for (const fireAt of strategy.plan(reminder, reminder.trigger, ctx, horizonMs)) {
+        if (!this.withinCalendar(reminder, fireAt)) continue;
         out.push({
           reminderId: reminder.id,
           fireAt,
@@ -248,7 +258,17 @@ export class ReminderEngine {
       activeSeconds: this.activeSeconds,
       runtime,
       settings,
+      calendar: this.calendar,
     };
+  }
+
+  private withinCalendar(reminder: Reminder, epochMs: number): boolean {
+    return matchesCalendar(
+      this.calendar,
+      reminder.trigger.calendar,
+      epochMs,
+      this.opts.clock.timeZone(),
+    );
   }
 
   private fire(

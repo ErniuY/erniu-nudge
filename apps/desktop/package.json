@@ -1,0 +1,35 @@
+{
+  "name": "@app/desktop",
+  "version": "0.1.0",
+  "author":"erniu",
+  "private": true,
+  "description": "久坐提醒桌面端：Electron 外壳（主进程 / 预加载 / 渲染界面）",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "icons": "node scripts/generate-icons.mjs",
+    "ico": "node scripts/make-ico.mjs",
+    "build:win": "node scripts/make-ico.mjs && electron-vite build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@app/core": "workspace:*",
+    "@app/schema": "workspace:*",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "electron-vite": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "chinese-days": "^1.5.9"
+  }
+}

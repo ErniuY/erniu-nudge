@@ -97,9 +97,6 @@ export default function ReminderList({
         ) : (
           <p className="muted">未来 24 小时没有安排。</p>
         )}
-        <p className="muted small">
-          这份预览用的是内核的 plan()，与将来 iOS 端预排本地通知是同一套计算——桌面端看到几次，手机上就是几次。
-        </p>
       </section>
     </div>
   );

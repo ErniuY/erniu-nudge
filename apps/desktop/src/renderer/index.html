@@ -3,6 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <title>久坐提醒</title>
+    <script>
+      // 启动期错误落盘，便于在无控制台的发布包里定位问题
+      function report(message) {
+        try {
+          window.__TAURI_INTERNALS__.invoke('debug_report', { message: String(message) });
+        } catch (error) {
+          /* Tauri 内部接口不可用时只能放弃 */
+        }
+      }
+      window.addEventListener('error', function (event) {
+        report('ERROR: ' + event.message + ' @ ' + (event.filename || '') + ':' + event.lineno + ' ' + (event.error && event.error.stack ? event.error.stack : ''));
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        report('REJECTION: ' + String(event.reason) + ' ' + (event.reason && event.reason.stack ? event.reason.stack : ''));
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -28,6 +28,9 @@ export type {
 export { zGlobalSettings, zAssetEntry, zAppConfig, parseConfig } from './config';
 export type { GlobalSettings, AppConfig, AssetEntry, ParseResult } from './config';
 
+export { APP_DEFAULTS } from './appDefaults';
+export type { AppDefaults } from './appDefaults';
+
 export {
   newId,
   defaultGlobalSettings,

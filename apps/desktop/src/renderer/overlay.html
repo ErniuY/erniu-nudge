@@ -3,6 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <title>提醒</title>
+    <script>
+      function report(message) {
+        try {
+          window.__TAURI_INTERNALS__.invoke('debug_report', { message: 'OVERLAY ' + String(message) });
+        } catch (error) {
+          /* ignore */
+        }
+      }
+      window.addEventListener('error', function (event) {
+        report('ERROR: ' + event.message + ' ' + (event.error && event.error.stack ? event.error.stack : ''));
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        report('REJECTION: ' + String(event.reason));
+      });
+    </script>
   </head>
   <body class="overlay-body">
     <div id="root"></div>

@@ -9,5 +9,5 @@
     "verbatimModuleSyntax": false,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "electron.vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }

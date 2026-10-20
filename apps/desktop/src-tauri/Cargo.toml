@@ -1,0 +1,39 @@
+[package]
+name = "erniu-nudge"
+version = "0.1.0"
+edition = "2021"
+description = "久坐提醒桌面端（Tauri 外壳）"
+authors = ["erniu"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.4", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+[features]
+# 生产构建必须启用：不加这个 feature，应用会去加载 devUrl（http://localhost:5173），
+# 打包后就是白屏。Tauri CLI 的 build 会自动带上它。
+default = []
+custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = [
+  "Win32_Foundation",
+  "Win32_System_SystemInformation",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+strip = true
+panic = "abort"

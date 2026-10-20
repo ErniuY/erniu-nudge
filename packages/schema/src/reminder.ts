@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { APP_DEFAULTS } from './appDefaults';
 
 export const zHHmm = z
   .string()
@@ -15,21 +16,21 @@ export const zActiveWindow = z.object({
  * 生效日期的日历类型。
  * china-workday 需要外部注入的节假日日历（含调休），内核只认接口、不认识具体数据源。
  */
-export const zCalendarKind = z.enum(['all', 'china-workday']).default('all');
+export const zCalendarKind = z.enum(['all', 'china-workday']).default(APP_DEFAULTS.trigger.calendar);
 export type CalendarKind = z.infer<typeof zCalendarKind>;
 
 const triggerBase = {
   activeWindow: zActiveWindow.optional(),
   /** 只在这些日子生效；与 activeWindow 是「同时满足」的关系 */
   calendar: zCalendarKind,
-  cooldownMinutes: z.number().int().min(0).max(1440).default(5),
+  cooldownMinutes: z.number().int().min(0).max(1440).default(APP_DEFAULTS.trigger.cooldownMinutes),
   maxPerDay: z.number().int().min(1).max(200).optional(),
   /**
    * 错过时间点后的补发窗口（分钟）。
    * 应用到 dailyAt / weekly：0 表示过期不补；默认 5 分钟只吸收 tick 抖动，
    * 吃药这类提醒建议设成 120，否则电脑在 09:00 处于睡眠状态就会整天不提醒。
    */
-  catchUpMinutes: z.number().int().min(0).max(1440).default(5),
+  catchUpMinutes: z.number().int().min(0).max(1440).default(APP_DEFAULTS.trigger.catchUpMinutes),
 };
 
 export const zTrigger = z.discriminatedUnion('type', [
@@ -86,16 +87,23 @@ export type ReminderAction = z.infer<typeof zReminderAction>;
 
 export const zEscalationStep = z.object({
   afterMinutes: z.number().int().min(0).max(720),
-  sound: z.enum(['none', 'gentle', 'normal', 'strong']).default('normal'),
-  autoCloseSeconds: z.number().int().min(0).max(600).default(30),
-  fullscreenMask: z.boolean().default(false),
+  sound: z
+    .enum(['none', 'gentle', 'normal', 'strong'])
+    .default(APP_DEFAULTS.reminder.escalationStep.sound),
+  autoCloseSeconds: z
+    .number()
+    .int()
+    .min(0)
+    .max(600)
+    .default(APP_DEFAULTS.reminder.escalationStep.autoCloseSeconds),
+  fullscreenMask: z.boolean().default(APP_DEFAULTS.reminder.escalationStep.fullscreenMask),
 });
 export type EscalationStep = z.infer<typeof zEscalationStep>;
 
 export const zReminder = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(60),
-  enabled: z.boolean().default(true),
+  enabled: z.boolean().default(APP_DEFAULTS.reminder.enabled),
 
   // 同步预留字段：将来 Windows ↔ iOS 同步时用于冲突合并与软删除
   updatedAt: z.string().datetime({ offset: true }),
@@ -105,36 +113,38 @@ export const zReminder = z.object({
   iconColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
-    .default('#2F80ED'),
+    .default(APP_DEFAULTS.reminder.iconColor),
 
   trigger: zTrigger,
   title: z.string().min(1).max(80),
   message: z.string().min(1).max(300),
-  actions: z.array(zReminderAction).default(['done', 'snooze', 'skip']),
-  snoozeMinutes: z.array(z.number().int().min(1).max(240)).default([5, 10, 15]),
+  actions: z.array(zReminderAction).default(APP_DEFAULTS.reminder.actions),
+  snoozeMinutes: z
+    .array(z.number().int().min(1).max(240))
+    .default(APP_DEFAULTS.reminder.snoozeMinutes),
 
   escalation: z.object({
-    enabled: z.boolean().default(true),
+    enabled: z.boolean().default(APP_DEFAULTS.reminder.escalation.enabled),
     steps: z.array(zEscalationStep).min(1),
   }),
 
   sound: z.object({
-    source: zAssetRef.default('builtin:chime'),
-    volume: z.number().min(0).max(1).default(0.6),
+    source: zAssetRef.default(APP_DEFAULTS.reminder.sound.source),
+    volume: z.number().min(0).max(1).default(APP_DEFAULTS.reminder.sound.volume),
   }),
 
-  presentation: z.enum(['toast', 'overlay', 'both']).default('both'),
+  presentation: z.enum(['toast', 'overlay', 'both']).default(APP_DEFAULTS.reminder.presentation),
   overlayStyle: z.object({
     corner: z
       .enum(['bottom-right', 'bottom-left', 'top-right', 'top-left', 'center'])
-      .default('bottom-right'),
-    width: z.number().int().min(240).max(720).default(360),
-    opacity: z.number().min(0.3).max(1).default(0.96),
+      .default(APP_DEFAULTS.reminder.overlay.corner),
+    width: z.number().int().min(240).max(720).default(APP_DEFAULTS.reminder.overlay.width),
+    opacity: z.number().min(0.3).max(1).default(APP_DEFAULTS.reminder.overlay.opacity),
   }),
   dndPolicy: z
     .enum(['pauseWhenFullscreen', 'recordOnlyWhenFullscreen', 'always'])
-    .default('pauseWhenFullscreen'),
-  tags: z.array(z.string()).default([]),
+    .default(APP_DEFAULTS.reminder.dndPolicy),
+  tags: z.array(z.string()).default(APP_DEFAULTS.reminder.tags),
 });
 
 export type Reminder = z.infer<typeof zReminder>;

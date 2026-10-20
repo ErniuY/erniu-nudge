@@ -1,16 +1,27 @@
 import { z } from 'zod';
 import { zReminder } from './reminder';
+import { APP_DEFAULTS } from './appDefaults';
 
 export const zGlobalSettings = z.object({
-  language: z.enum(['zh-CN', 'en-US']).default('zh-CN'),
-  launchAtLogin: z.boolean().default(true),
+  language: z.enum(['zh-CN', 'en-US']).default(APP_DEFAULTS.global.language),
+  launchAtLogin: z.boolean().default(APP_DEFAULTS.global.launchAtLogin),
   /** 引擎采样间隔 */
-  tickSeconds: z.number().int().min(1).max(60).default(5),
+  tickSeconds: z.number().int().min(1).max(60).default(APP_DEFAULTS.global.tickSeconds),
   /** 键鼠空闲超过该秒数即视为「离开」 */
-  idleThresholdSeconds: z.number().int().min(10).max(3600).default(120),
+  idleThresholdSeconds: z
+    .number()
+    .int()
+    .min(10)
+    .max(3600)
+    .default(APP_DEFAULTS.global.idleThresholdSeconds),
   /** 离开持续超过该秒数则清零重新计时 */
-  resetAfterIdleSeconds: z.number().int().min(10).max(7200).default(180),
-  minimizeToTray: z.boolean().default(true),
+  resetAfterIdleSeconds: z
+    .number()
+    .int()
+    .min(10)
+    .max(7200)
+    .default(APP_DEFAULTS.global.resetAfterIdleSeconds),
+  minimizeToTray: z.boolean().default(APP_DEFAULTS.global.minimizeToTray),
   /** 静音截止时刻（epoch 毫秒）；null 表示未静音 */
   muteUntil: z.number().nullable().default(null),
 });

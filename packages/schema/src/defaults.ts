@@ -1,5 +1,6 @@
 import type { AppConfig, GlobalSettings } from './config';
 import type { Reminder } from './reminder';
+import { APP_DEFAULTS } from './appDefaults';
 
 /**
  * 生成 UUID。优先使用 Web Crypto（Node / 浏览器 / React Native 均可用），
@@ -20,114 +21,143 @@ function nowIso(): string {
 }
 
 export function defaultGlobalSettings(): GlobalSettings {
+  const { global } = APP_DEFAULTS;
   return {
-    language: 'zh-CN',
-    launchAtLogin: true,
-    tickSeconds: 5,
-    idleThresholdSeconds: 120,
-    resetAfterIdleSeconds: 180,
-    minimizeToTray: true,
+    language: global.language,
+    launchAtLogin: global.launchAtLogin,
+    tickSeconds: global.tickSeconds,
+    idleThresholdSeconds: global.idleThresholdSeconds,
+    resetAfterIdleSeconds: global.resetAfterIdleSeconds,
+    minimizeToTray: global.minimizeToTray,
     muteUntil: null,
+  };
+}
+
+type ReminderLook = Pick<
+  Reminder,
+  | 'enabled'
+  | 'actions'
+  | 'snoozeMinutes'
+  | 'escalation'
+  | 'sound'
+  | 'presentation'
+  | 'overlayStyle'
+  | 'dndPolicy'
+>;
+
+/** 复制一份默认外观，避免多个模板共享同一个数组或对象 */
+function reminderLook(): ReminderLook {
+  const reminder = APP_DEFAULTS.reminder;
+  return {
+    enabled: reminder.enabled,
+    actions: [...reminder.actions],
+    snoozeMinutes: [...reminder.snoozeMinutes],
+    escalation: {
+      enabled: reminder.escalation.enabled,
+      steps: reminder.escalation.steps.map((step) => ({ ...step })),
+    },
+    sound: { ...reminder.sound },
+    presentation: reminder.presentation,
+    overlayStyle: { ...reminder.overlay },
+    dndPolicy: reminder.dndPolicy,
   };
 }
 
 /** 久坐提醒：连续活跃使用 45 分钟后提醒起身 */
 export function standUpTemplate(): Reminder {
+  const template = APP_DEFAULTS.templates.standUp;
+  const trigger = APP_DEFAULTS.triggers.activeDuration;
+
   return {
     id: newId(),
-    name: '站起来活动',
-    enabled: true,
+    name: template.name,
+    ...reminderLook(),
     updatedAt: nowIso(),
     deletedAt: null,
-    icon: 'builtin:stand-up',
-    iconColor: '#2F80ED',
+    icon: template.icon,
+    iconColor: template.iconColor,
     trigger: {
       type: 'activeDuration',
-      everyMinutes: 45,
-      cooldownMinutes: 10,
-      catchUpMinutes: 5,
-      maxPerDay: 10,
-      // 用「中国工作日」而不是「周一到周五」：调休的周六要提醒，放假的周一如要静默
-      calendar: 'china-workday',
-      activeWindow: { days: [0, 1, 2, 3, 4, 5, 6], from: '09:00', to: '18:30' },
+      everyMinutes: trigger.everyMinutes,
+      cooldownMinutes: trigger.cooldownMinutes,
+      catchUpMinutes: trigger.catchUpMinutes,
+      maxPerDay: template.maxPerDay,
+      calendar: template.calendar,
+      activeWindow: {
+        ...template.activeWindow,
+        days: [...template.activeWindow.days],
+      },
     },
-    title: '该站起来了',
-    message: '你已经连续坐了 {elapsed} 分钟，起来走两分钟吧。',
-    actions: ['done', 'snooze', 'skip'],
-    snoozeMinutes: [5, 10, 15],
-    escalation: {
-      enabled: true,
-      steps: [
-        { afterMinutes: 0, sound: 'gentle', autoCloseSeconds: 30, fullscreenMask: false },
-        { afterMinutes: 3, sound: 'normal', autoCloseSeconds: 60, fullscreenMask: false },
-        { afterMinutes: 8, sound: 'strong', autoCloseSeconds: 0, fullscreenMask: true },
-      ],
-    },
-    sound: { source: 'builtin:chime', volume: 0.6 },
-    presentation: 'both',
-    overlayStyle: { corner: 'bottom-right', width: 360, opacity: 0.96 },
-    dndPolicy: 'pauseWhenFullscreen',
-    tags: ['健康'],
+    title: template.title,
+    message: template.message,
+    tags: [...template.tags],
   };
 }
 
 /** 喝水提醒：固定间隔，仅工作时间，每日上限 8 次 */
 export function drinkWaterTemplate(): Reminder {
-  const base = standUpTemplate();
+  const template = APP_DEFAULTS.templates.drinkWater;
+  const trigger = APP_DEFAULTS.triggers.interval;
+
   return {
-    ...base,
     id: newId(),
-    name: '喝水',
-    icon: 'builtin:water',
-    iconColor: '#56CCF2',
+    name: template.name,
+    ...reminderLook(),
+    updatedAt: nowIso(),
+    deletedAt: null,
+    icon: template.icon,
+    iconColor: template.iconColor,
     trigger: {
       type: 'interval',
-      everyMinutes: 40,
-      cooldownMinutes: 5,
-      catchUpMinutes: 5,
-      maxPerDay: 8,
-      calendar: 'china-workday',
-      activeWindow: { days: [0, 1, 2, 3, 4, 5, 6], from: '09:00', to: '18:00' },
+      everyMinutes: trigger.everyMinutes,
+      cooldownMinutes: trigger.cooldownMinutes,
+      catchUpMinutes: trigger.catchUpMinutes,
+      maxPerDay: template.maxPerDay,
+      calendar: template.calendar,
+      activeWindow: {
+        ...template.activeWindow,
+        days: [...template.activeWindow.days],
+      },
     },
-    title: '该喝水了',
-    message: '补充一杯水，顺便活动一下肩颈。',
+    title: template.title,
+    message: template.message,
+    presentation: template.presentation,
     escalation: {
-      enabled: false,
-      steps: [{ afterMinutes: 0, sound: 'gentle', autoCloseSeconds: 20, fullscreenMask: false }],
+      enabled: template.escalation.enabled,
+      steps: template.escalation.steps.map((step) => ({ ...step })),
     },
-    presentation: 'toast',
-    tags: ['健康'],
+    tags: [...template.tags],
   };
 }
 
-/** 定时服药：每天固定时刻 */
+/** 定时服药：每天固定时刻，未被确认就每 10 分钟加强一次 */
 export function medicationTemplate(): Reminder {
-  const base = standUpTemplate();
+  const template = APP_DEFAULTS.templates.medication;
+  const trigger = APP_DEFAULTS.triggers.dailyAt;
+
   return {
-    ...base,
     id: newId(),
-    name: '服药',
-    icon: 'builtin:pill',
-    iconColor: '#EB5757',
+    name: template.name,
+    ...reminderLook(),
+    updatedAt: nowIso(),
+    deletedAt: null,
+    icon: template.icon,
+    iconColor: template.iconColor,
     trigger: {
       type: 'dailyAt',
-      at: ['08:00', '20:00'],
-      cooldownMinutes: 0,
-      catchUpMinutes: 120, // 错过了也要补提醒：电脑睡眠不该导致漏吃药
-      calendar: 'all', // 吃药不分工作日
+      at: [...template.at],
+      cooldownMinutes: trigger.cooldownMinutes,
+      catchUpMinutes: template.catchUpMinutes,
+      calendar: template.calendar,
     },
-    title: '该吃药了',
-    message: '别忘了按时服药。',
+    title: template.title,
+    message: template.message,
+    dndPolicy: template.dndPolicy,
     escalation: {
-      enabled: true,
-      steps: [
-        { afterMinutes: 0, sound: 'normal', autoCloseSeconds: 0, fullscreenMask: false },
-        { afterMinutes: 10, sound: 'strong', autoCloseSeconds: 0, fullscreenMask: false },
-      ],
+      enabled: template.escalation.enabled,
+      steps: template.escalation.steps.map((step) => ({ ...step })),
     },
-    presentation: 'both',
-    dndPolicy: 'always',
-    tags: ['健康'],
+    tags: [...template.tags],
   };
 }
 

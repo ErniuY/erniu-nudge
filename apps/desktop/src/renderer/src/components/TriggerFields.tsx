@@ -1,4 +1,4 @@
-import type { Trigger } from '@app/schema';
+import { APP_DEFAULTS, type Trigger } from '@app/schema';
 import DraftInput from './DraftInput';
 
 const WEEKDAY_LABEL = ['日', '一', '二', '三', '四', '五', '六'];
@@ -33,9 +33,8 @@ function unparsedTimeFragments(raw: string): string[] {
 type ActiveWindowValue = NonNullable<Trigger['activeWindow']>;
 
 const DEFAULT_WINDOW: ActiveWindowValue = {
-  days: [0, 1, 2, 3, 4, 5, 6],
-  from: '09:00',
-  to: '18:30',
+  ...APP_DEFAULTS.trigger.activeWindow,
+  days: [...APP_DEFAULTS.trigger.activeWindow.days],
 };
 
 // 一天都不选的话 schema 会校验失败，所以「取消最后一天」这个操作直接忽略
@@ -64,7 +63,13 @@ function ActiveWindowEditor({
         <input
           type="checkbox"
           checked={enabled}
-          onChange={(event) => onChange(event.target.checked ? DEFAULT_WINDOW : undefined)}
+          onChange={(event) =>
+            onChange(
+              event.target.checked
+                ? { ...DEFAULT_WINDOW, days: [...DEFAULT_WINDOW.days] }
+                : undefined,
+            )
+          }
         />
         <span>只在指定时间段内提醒</span>
       </label>
@@ -116,37 +121,33 @@ function ActiveWindowEditor({
 }
 
 function defaultsFor(type: Trigger['type']): Trigger {
+  const defaults = APP_DEFAULTS.triggers;
+  const calendar = APP_DEFAULTS.trigger.calendar;
+
   switch (type) {
     case 'activeDuration':
-      return { type, everyMinutes: 45, cooldownMinutes: 10, catchUpMinutes: 5, calendar: 'all' };
+      return { type, ...defaults.activeDuration, calendar };
     case 'interval':
-      return { type, everyMinutes: 40, cooldownMinutes: 5, catchUpMinutes: 5, calendar: 'all' };
+      return { type, ...defaults.interval, calendar };
     case 'dailyAt':
-      return { type, at: ['09:00'], cooldownMinutes: 0, catchUpMinutes: 120, calendar: 'all' };
+      return { type, ...defaults.dailyAt, at: [...defaults.dailyAt.at], calendar };
     case 'weekly':
       return {
         type,
-        entries: [{ day: 1, at: '10:00' }],
-        cooldownMinutes: 0,
-        catchUpMinutes: 120,
-        calendar: 'all',
+        entries: defaults.weekly.entries.map((entry) => ({ ...entry })),
+        cooldownMinutes: defaults.weekly.cooldownMinutes,
+        catchUpMinutes: defaults.weekly.catchUpMinutes,
+        calendar,
       };
     case 'pomodoro':
-      return {
-        type,
-        focusMinutes: 25,
-        breakMinutes: 5,
-        cooldownMinutes: 5,
-        catchUpMinutes: 5,
-        calendar: 'all',
-      };
+      return { type, ...defaults.pomodoro, calendar };
     case 'once':
       return {
         type,
-        at: new Date(Date.now() + 3600_000).toISOString(),
-        cooldownMinutes: 0,
-        catchUpMinutes: 0,
-        calendar: 'all',
+        at: new Date(Date.now() + defaults.once.offsetMinutes * 60_000).toISOString(),
+        cooldownMinutes: defaults.once.cooldownMinutes,
+        catchUpMinutes: defaults.once.catchUpMinutes,
+        calendar,
       };
   }
 }

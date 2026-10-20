@@ -1,0 +1,10 @@
+# 国内网络下 index.crates.io / static.crates.io 经常连不上，
+# 这个配置只作用于当前目录及其子目录，不影响机器上其他 Rust 项目。
+[source.crates-io]
+replace-with = "rsproxy-sparse"
+
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+
+[net]
+git-fetch-with-cli = true

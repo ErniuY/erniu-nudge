@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "主窗口与悬浮窗口所需的最小能力集",
+  "windows": ["main", "overlay"],
+  "permissions": ["core:default"]
+}

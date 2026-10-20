@@ -65,3 +65,31 @@ export interface ImportedIcon {
 }
 
 export type SettingsPatch = Partial<GlobalSettings>;
+
+export interface BootstrapPayload {
+  config: AppConfig | null;
+  assetUrls: Record<string, string>;
+  snapshot: { activeSeconds: number; lastTickAt: number | null };
+  idleThresholdSeconds: number;
+}
+
+/**
+ * 渲染进程依赖的全部能力。
+ * Electron 版本由 preload 实现，Tauri 版本由 tauri/api.ts 实现——
+ * 界面组件只认这个接口，所以换外壳时 UI 一行都不用改。
+ */
+export interface DesktopApi {
+  getConfig(): Promise<ConfigPayload>;
+  saveReminder(reminder: Reminder): Promise<ConfigPayload>;
+  deleteReminder(id: string): Promise<ConfigPayload>;
+  acknowledge(payload: AckPayload): Promise<ConfigPayload>;
+  patchSettings(patch: SettingsPatch): Promise<ConfigPayload>;
+  setPaused(paused: boolean): Promise<EngineStatus>;
+  getStatus(): Promise<EngineStatus>;
+  planPreview(horizonMs: number): Promise<PlannedTrigger[]>;
+  importIcon(): Promise<ImportedIcon | null>;
+  onStatus(cb: (status: EngineStatus) => void): () => void;
+  onConfig(cb: (payload: ConfigPayload) => void): () => void;
+  getOverlayPayload(): Promise<OverlayPayload | null>;
+  overlayAction(id: string, action: ReminderAction, minutes?: number): Promise<void>;
+}

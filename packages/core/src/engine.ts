@@ -13,6 +13,13 @@ import { zonedParts } from './localTime';
 import { matchesCalendar, type WorkdayCalendar } from './calendar';
 
 /**
+ * 单次 tick 允许的最大间隔倍数。
+ * 超过 tickSeconds × 这个值，说明两次采样之间系统休眠过、进程被挂起过，
+ * 或者系统时钟被大幅调整过 —— 这段间隔不能算作用户在使用电脑。
+ */
+const MAX_TICK_GAP_FACTOR = 4;
+
+/**
  * 调度引擎。双模式：
  *
  * - tick()  实时模式：桌面端常驻进程每 tickSeconds 调用一次，实时判断是否触发。
@@ -171,10 +178,15 @@ export class ReminderEngine {
   restore(snapshot: EngineSnapshot): void {
     this.activeSeconds = snapshot.activeSeconds;
     this.lastTickAt = snapshot.lastTickAt;
+    this.idleSeconds = snapshot.idleSeconds ?? 0;
   }
 
   snapshot(): EngineSnapshot {
-    return { activeSeconds: this.activeSeconds, lastTickAt: this.lastTickAt };
+    return {
+      activeSeconds: this.activeSeconds,
+      lastTickAt: this.lastTickAt,
+      idleSeconds: this.idleSeconds,
+    };
   }
 
   // ---------------------------------------------------------------- 内部实现
@@ -188,13 +200,23 @@ export class ReminderEngine {
       return;
     }
 
-    // 防止系统时钟跳变、未被感知的休眠产生超大 delta，按 tick 周期的 4 倍截断
-    const deltaSeconds = Math.min(
-      Math.max((signals.at - prev) / 1000, 0),
-      g.tickSeconds * 4,
-    );
+    const maxGapSeconds = g.tickSeconds * MAX_TICK_GAP_FACTOR;
+    const rawDeltaSeconds = (signals.at - prev) / 1000;
+
+    // 休眠唤醒后的第一次 tick 间隔会远超正常周期。
+    // 这里直接清零，而不是把间隔截断成 20 秒，否则睡两小时会被当成只离开了 20 秒。
+    if (rawDeltaSeconds > maxGapSeconds) {
+      this.resetSession();
+      this.idleSeconds = g.resetAfterIdleSeconds;
+      return;
+    }
+
+    const deltaSeconds = Math.min(Math.max(rawDeltaSeconds, 0), maxGapSeconds);
 
     if (!signals.userPresent) {
+      // 短离开（未达 resetAfterIdleSeconds）时：
+      // - 这 9 分钟累计进 idleSeconds，并随快照落盘，不会丢
+      // - 但不计入 activeSeconds —— 离开的时间不该算成「坐着用电脑」
       this.idleSeconds += deltaSeconds;
       if (this.idleSeconds >= g.resetAfterIdleSeconds) this.resetSession();
       return;

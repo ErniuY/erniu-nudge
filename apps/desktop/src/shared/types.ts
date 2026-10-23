@@ -1,4 +1,13 @@
-import type { AppConfig, GlobalSettings, Reminder, ReminderAction } from '@app/schema';
+import type {
+  AppConfig,
+  GlobalSettings,
+  OverlayActionsDirection,
+  OverlayBackgroundFit,
+  OverlayImageMode,
+  Reminder,
+  ReminderAction,
+  ThemeSettings,
+} from '@app/schema';
 import type { PlannedTrigger, TemplateVariables } from '@app/core';
 
 /** 配置 + 图标资源解析结果，一次性发给渲染进程，避免来回查询 */
@@ -56,6 +65,25 @@ export interface OverlayPayload {
   actions: ReminderAction[];
   snoozeMinutes: number[];
   variables: TemplateVariables;
+  /** 主题背景图（data URL）；null 表示使用纯色卡片 */
+  backgroundDataUrl: string | null;
+  /** 图片作为整张背景，还是作为右侧人物/插画 */
+  imageMode: OverlayImageMode;
+  /** 背景图的适配方式 */
+  backgroundFit: OverlayBackgroundFit;
+  /** 背景图上的白色蒙版深度 */
+  backgroundDim: number;
+  /** 人物/插画中心位置和缩放 */
+  imagePosition: { x: number; y: number };
+  imageScale: number;
+  /** 文字块位置（百分比） */
+  textPosition: { x: number; y: number };
+  textAlign: 'left' | 'center' | 'right';
+  /** 操作按钮整组的位置与排列方向 */
+  actionsPosition: { x: number; y: number };
+  actionsDirection: OverlayActionsDirection;
+  /** 去掉卡片白底、边框和阴影 */
+  cardTransparent: boolean;
 }
 
 export interface ImportedIcon {
@@ -64,12 +92,18 @@ export interface ImportedIcon {
   fileName: string;
 }
 
+export interface ImportedAsset {
+  ref: string;
+  kind: 'icon' | 'background';
+  fileName: string;
+}
+
 export type SettingsPatch = Partial<GlobalSettings>;
 
 export interface BootstrapPayload {
   config: AppConfig | null;
   assetUrls: Record<string, string>;
-  snapshot: { activeSeconds: number; lastTickAt: number | null };
+  snapshot: { activeSeconds: number; lastTickAt: number | null; idleSeconds?: number };
   idleThresholdSeconds: number;
 }
 
@@ -88,6 +122,10 @@ export interface DesktopApi {
   getStatus(): Promise<EngineStatus>;
   planPreview(horizonMs: number): Promise<PlannedTrigger[]>;
   importIcon(): Promise<ImportedIcon | null>;
+  importAsset(kind: 'icon' | 'background'): Promise<ImportedAsset | null>;
+  patchTheme(patch: Partial<ThemeSettings>): Promise<ConfigPayload>;
+  openDataDir(): Promise<void>;
+  openProjectPage(): Promise<void>;
   onStatus(cb: (status: EngineStatus) => void): () => void;
   onConfig(cb: (payload: ConfigPayload) => void): () => void;
   getOverlayPayload(): Promise<OverlayPayload | null>;

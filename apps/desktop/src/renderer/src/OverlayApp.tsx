@@ -92,44 +92,113 @@ export default function OverlayApp() {
     <BuiltinIcon name="clock" size={26} color={payload.iconColor} />
   );
 
+  const isCharacter = payload.imageMode === 'character' && Boolean(payload.backgroundDataUrl);
+  const isBackground = payload.imageMode === 'background' && Boolean(payload.backgroundDataUrl);
+
   const card = (
-    <div className="overlay-card" style={{ borderColor: `${payload.iconColor}33` }}>
-      <div className="overlay-head">
-        <span className="overlay-icon" style={{ background: `${payload.iconColor}1a` }}>
-          {icon}
-        </span>
-        <div className="overlay-text">
-          <div className="overlay-title">{payload.title}</div>
-          <div className="overlay-message">{payload.message}</div>
+    <div
+      className={`overlay-card${isBackground ? ' has-background' : ''}${
+        isCharacter ? ' has-character' : ''
+      }${payload.cardTransparent ? ' transparent-card' : ''}`}
+      style={{
+        borderColor: payload.cardTransparent ? 'transparent' : `${payload.iconColor}33`,
+        backgroundImage: isBackground && payload.backgroundDataUrl
+          ? `url("${payload.backgroundDataUrl}")`
+          : undefined,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize:
+          payload.backgroundFit === 'stretch' ? '100% 100%' : 'contain',
+        backgroundPosition:
+          payload.backgroundFit === 'left'
+            ? 'left center'
+            : payload.backgroundFit === 'right'
+              ? 'right center'
+              : 'center',
+      }}
+    >
+      {isBackground && (
+        <span
+          className="overlay-card-dim"
+          style={{ backgroundColor: `rgba(252, 253, 251, ${payload.backgroundDim})` }}
+          aria-hidden="true"
+        />
+      )}
+
+      {isCharacter && payload.backgroundDataUrl && (
+        <img
+          className="overlay-character-image"
+          src={payload.backgroundDataUrl}
+          alt=""
+          aria-hidden="true"
+          style={{
+            left: `${payload.imagePosition.x}%`,
+            top: `${payload.imagePosition.y}%`,
+            transform: `translate(-50%, -50%) scale(${payload.imageScale})`,
+          }}
+        />
+      )}
+
+      <div
+        className={`overlay-copy${isCharacter ? ' character-copy' : ''}`}
+        style={{
+          left: `${payload.textPosition.x}%`,
+          top: `${payload.textPosition.y}%`,
+          textAlign: payload.textAlign,
+        }}
+      >
+        <div className="overlay-head">
+          <span className="overlay-icon" style={{ background: `${payload.iconColor}1a` }}>
+            {icon}
+          </span>
+          <div className="overlay-text">
+            <div className="overlay-title">{payload.title}</div>
+            <div className="overlay-message">{payload.message}</div>
+          </div>
+          {payload.escalationStep > 0 && (
+            <span className="overlay-badge">第 {payload.escalationStep + 1} 次</span>
+          )}
         </div>
-        {payload.escalationStep > 0 && <span className="overlay-badge">第 {payload.escalationStep + 1} 次</span>}
       </div>
 
-      <div className="overlay-actions">
-        {payload.actions.includes('done') && (
-          <button type="button" className="btn primary" onClick={() => act('done')}>
-            {ACTION_LABEL.done}
-          </button>
-        )}
-        {payload.actions.includes('snooze') &&
-          payload.snoozeMinutes.slice(0, 3).map((minutes) => (
-            <button
-              key={minutes}
-              type="button"
-              className="btn ghost"
-              onClick={() => act('snooze', minutes)}
-            >
-              {minutes} 分钟后
+      <div
+        className={`overlay-action-stack${
+          payload.actionsDirection === 'vertical' ? ' vertical' : ''
+        }`}
+        style={{
+          left: `${payload.actionsPosition.x}%`,
+          top: `${payload.actionsPosition.y}%`,
+        }}
+      >
+        <div
+          className={`overlay-actions${
+            payload.actionsDirection === 'vertical' ? ' vertical' : ''
+          }`}
+        >
+          {payload.actions.includes('done') && (
+            <button type="button" className="btn primary" onClick={() => act('done')}>
+              {ACTION_LABEL.done}
             </button>
-          ))}
-        {payload.actions.includes('skip') && (
-          <button type="button" className="btn link" onClick={() => act('skip')}>
-            跳过本次
-          </button>
-        )}
-      </div>
+          )}
+          {payload.actions.includes('snooze') &&
+            payload.snoozeMinutes.slice(0, 3).map((minutes) => (
+              <button
+                key={minutes}
+                type="button"
+                className="btn ghost"
+                onClick={() => act('snooze', minutes)}
+              >
+                {minutes} 分钟后
+              </button>
+            ))}
+          {payload.actions.includes('skip') && (
+            <button type="button" className="btn link" onClick={() => act('skip')}>
+              跳过本次
+            </button>
+          )}
+        </div>
 
-      {remaining !== null && <div className="overlay-timer">{remaining} 秒后自动关闭</div>}
+        {remaining !== null && <div className="overlay-timer">{remaining} 秒后自动关闭</div>}
+      </div>
     </div>
   );
 

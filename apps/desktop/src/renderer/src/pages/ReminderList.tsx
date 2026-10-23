@@ -4,13 +4,25 @@ import { BuiltinIcon } from '../builtinIcons';
 import { formatClock } from '../format';
 import { summarizeTrigger } from '../triggerSummary';
 
-function ReminderIcon({ reminder, assetUrls }: { reminder: Reminder; assetUrls: Record<string, string> }) {
+function ReminderIcon({
+  reminder,
+  assetUrls,
+}: {
+  reminder: Reminder;
+  assetUrls: Record<string, string>;
+}) {
   if (reminder.icon.startsWith('builtin:')) {
-    return <BuiltinIcon name={reminder.icon.slice('builtin:'.length)} size={24} color={reminder.iconColor} />;
+    return (
+      <BuiltinIcon
+        name={reminder.icon.slice('builtin:'.length)}
+        size={18}
+        color={reminder.iconColor}
+      />
+    );
   }
   const url = assetUrls[reminder.icon];
-  if (!url) return <BuiltinIcon name="clock" size={24} color={reminder.iconColor} />;
-  return <img src={url} alt="" width={24} height={24} />;
+  if (!url) return <BuiltinIcon name="clock" size={18} color={reminder.iconColor} />;
+  return <img src={url} alt="" width={18} height={18} />;
 }
 
 export default function ReminderList({
@@ -30,74 +42,78 @@ export default function ReminderList({
   onToggle: (reminder: Reminder) => void;
   onDelete: (id: string) => void;
 }) {
-  const nameOf = (id: string) => reminders.find((item) => item.id === id)?.name ?? '已删除';
+  const nameOf = (id: string) =>
+    reminders.find((item) => item.id === id)?.name ?? '已删除';
 
   return (
-    <div className="page">
-      <header className="page-head">
-        <div>
-          <h1>提醒</h1>
-          <p className="muted">久坐只是其中一条。任何提醒都可以自己配置触发器、图标和提醒方式。</p>
-        </div>
-        <button type="button" className="btn primary" onClick={onCreate}>
+    <section className="rem-block">
+      <div className="section-head">
+        <span className="kicker">提醒项 · {reminders.length}</span>
+        <button type="button" className="text-btn" onClick={onCreate}>
           ＋ 新建提醒
         </button>
-      </header>
+      </div>
 
       {reminders.length === 0 ? (
-        <div className="empty">还没有提醒，点右上角新建一条。</div>
+        <div className="empty">还没有提醒，先新建一条吧。</div>
       ) : (
-        <ul className="reminder-list">
-          {reminders.map((reminder) => (
-            <li key={reminder.id} className={`reminder${reminder.enabled ? '' : ' off'}`}>
-              <span className="reminder-icon" style={{ background: `${reminder.iconColor}1f` }}>
+        <div className="rem-list">
+          {reminders.map((reminder, index) => (
+            <div
+              key={reminder.id}
+              className={`rem-row${reminder.enabled ? '' : ' off'}`}
+            >
+              <span className="rem-idx">{String(index + 1).padStart(2, '0')}</span>
+              <span className="rem-icon">
                 <ReminderIcon reminder={reminder} assetUrls={assetUrls} />
               </span>
-
-              <div className="reminder-main">
-                <div className="reminder-name">{reminder.name}</div>
-                <div className="reminder-meta">{summarizeTrigger(reminder.trigger)}</div>
+              <div className="rem-body">
+                <div className="rem-name">{reminder.name}</div>
+                <div className="rem-desc">{summarizeTrigger(reminder.trigger)}</div>
               </div>
+              <div className="rem-controls">
+                <button
+                  type="button"
+                  className={`rem-state${reminder.enabled ? ' on' : ''}`}
+                  onClick={() => onToggle(reminder)}
+                >
+                  {reminder.enabled ? 'ON' : 'OFF'}
+                </button>
+                <button
+                  type="button"
+                  className="rem-action"
+                  onClick={() => onEdit(reminder)}
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  className="rem-action danger"
+                  onClick={() => onDelete(reminder.id)}
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-              <label className="switch" title="启用 / 停用">
-                <input
-                  type="checkbox"
-                  checked={reminder.enabled}
-                  onChange={() => onToggle(reminder)}
-                />
-                <span />
-              </label>
-
-              <button type="button" className="btn ghost" onClick={() => onEdit(reminder)}>
-                编辑
-              </button>
-              <button
-                type="button"
-                className="btn ghost danger"
-                onClick={() => onDelete(reminder.id)}
-              >
-                删除
-              </button>
+      <div className="section-head upcoming-head">
+        <span className="kicker">接下来 24 小时</span>
+      </div>
+      {status && status.upcoming.length > 0 ? (
+        <ul className="upcoming">
+          {status.upcoming.map((item, index) => (
+            <li key={`${item.reminderId}-${item.fireAt}-${index}`}>
+              <span className="upcoming-time">{formatClock(item.fireAt)}</span>
+              <span className="upcoming-name">{nameOf(item.reminderId)}</span>
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="muted small">未来 24 小时没有安排。</p>
       )}
-
-      <section className="panel">
-        <h2>接下来 24 小时</h2>
-        {status && status.upcoming.length > 0 ? (
-          <ul className="upcoming">
-            {status.upcoming.map((item, index) => (
-              <li key={`${item.reminderId}-${item.fireAt}-${index}`}>
-                <span className="upcoming-time">{formatClock(item.fireAt)}</span>
-                <span className="upcoming-name">{nameOf(item.reminderId)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">未来 24 小时没有安排。</p>
-        )}
-      </section>
-    </div>
+    </section>
   );
 }

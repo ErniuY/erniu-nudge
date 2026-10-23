@@ -199,6 +199,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::bootstrap,
             commands::debug_report,
+            commands::open_data_dir,
             commands::get_config,
             commands::save_config,
             commands::patch_global,
@@ -206,7 +207,8 @@ fn main() {
             commands::append_history,
             commands::read_history_counts,
             commands::save_snapshot,
-            commands::import_icon,
+            commands::import_asset,
+            commands::open_project_page,
             commands::present_event,
             commands::publish_status,
             commands::get_overlay_payload,

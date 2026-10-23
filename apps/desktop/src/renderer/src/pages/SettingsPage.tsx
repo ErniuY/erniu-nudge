@@ -19,10 +19,12 @@ export default function SettingsPage({
   config,
   status,
   onPatch,
+  onOpenDataDir,
 }: {
   config: AppConfig;
   status: EngineStatus | null;
   onPatch: (patch: SettingsPatch) => void;
+  onOpenDataDir: () => void;
 }) {
   const global = config.global;
   // 静音状态直接读配置：点完立刻回显。
@@ -138,14 +140,42 @@ export default function SettingsPage({
           </span>
         </div>
         <p className="muted small">
-          配置保存在应用数据目录（%APPDATA%\erniu-nudge），包含 config.json、state.json 和历史记录。
-          配置写入前会先校验、再原子替换，并保留一份 config.backup.json，损坏时自动回退。
+          你的提醒设置、计时状态和起身记录都只保存在这台电脑上，不会上传到任何地方。
+          <span className="info-wrap">
+            <button type="button" className="info-btn" aria-label="数据存放说明">
+              i
+            </button>
+            <span className="info-tip" role="tooltip">
+              <span className="info-tip-box">
+                每次修改都会先检查内容是否完整再保存，并自动留一份备份——万一文件意外损坏，
+                应用会自己回到上一次可用的状态。
+                <br />
+                数据存放在 <code>%APPDATA%\erniu-nudge</code> 里，想换电脑或手动备份时，
+                复制这个文件夹即可。
+                <span className="info-tip-actions">
+                  <button type="button" className="info-tip-btn" onClick={onOpenDataDir}>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z" />
+                    </svg>
+                    打开数据文件夹
+                  </button>
+                </span>
+              </span>
+            </span>
+          </span>
         </p>
-        
+
       </section>
     </div>
   );
 }
-{/* <p className="muted small">
-          提醒项里已经预留了 deviceId / updatedAt / deletedAt 字段，将来接 iOS 端做同步不需要迁移数据。
-      </p> */}

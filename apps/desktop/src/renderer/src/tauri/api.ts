@@ -1,11 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
+  APP_DEFAULTS,
   defaultConfig,
   newId,
+  zAppConfig,
   type AppConfig,
   type Reminder,
   type ReminderAction,
+  type ThemeSettings,
 } from '@app/schema';
 import {
   ReminderEngine,
@@ -22,6 +25,7 @@ import type {
   ConfigPayload,
   DesktopApi,
   EngineStatus,
+  ImportedAsset,
   ImportedIcon,
   OverlayPayload,
   SettingsPatch,
@@ -72,6 +76,8 @@ let assetUrls: Record<string, string> = {};
 let engine: ReminderEngine;
 let paused = false;
 let counts = { ack: 0, fire: 0 };
+/** 当前 counts 对应的本地日期，用于跨天后自动重读 */
+let countsDayKey = todayKey();
 let tickTimer: number | undefined;
 let snapshotTimer: number | undefined;
 
@@ -111,6 +117,17 @@ function computeStatus(): EngineStatus {
 }
 
 async function pushStatus(): Promise<void> {
+  // 跨过午夜后要重新读当天的统计，否则界面会一直显示昨天的数字
+  const key = todayKey();
+  if (key !== countsDayKey) {
+    countsDayKey = key;
+    try {
+      counts = await invoke('read_history_counts', { dayKey: key });
+    } catch (error) {
+      console.warn('[status] 重新读取当日统计失败', error);
+    }
+  }
+
   const status = computeStatus();
   for (const listener of statusListeners) listener(status);
   try {
@@ -219,6 +236,7 @@ async function acknowledge(input: AckPayload): Promise<ConfigPayload> {
       step: null,
     },
   });
+  countsDayKey = todayKey();
   await pushStatus();
   return payload();
 }
@@ -264,8 +282,8 @@ async function setPaused(value: boolean): Promise<EngineStatus> {
   return computeStatus();
 }
 
-async function importIcon(): Promise<ImportedIcon | null> {
-  const result = await invoke<ImportedIcon | null>('import_icon');
+async function importAsset(kind: 'icon' | 'background'): Promise<ImportedAsset | null> {
+  const result = await invoke<ImportedAsset | null>('import_asset', { kind });
   if (result) {
     const fresh = await invoke<ConfigPayload>('get_config');
     config = fresh.config;
@@ -275,11 +293,29 @@ async function importIcon(): Promise<ImportedIcon | null> {
   return result;
 }
 
+const importIcon = async (): Promise<ImportedIcon | null> =>
+  (await importAsset('icon')) as ImportedIcon | null;
+
+async function patchTheme(patch: Partial<ThemeSettings>): Promise<ConfigPayload> {
+  if (!config) throw new Error('配置尚未初始化');
+  return persistConfig({
+    ...config,
+    updatedAt: new Date().toISOString(),
+    theme: { ...(config.theme ?? APP_DEFAULTS.theme), ...patch },
+  });
+}
+
 // ---------------------------------------------------------------- 初始化与事件
 
 async function initialize(): Promise<void> {
   const boot = await invoke<BootstrapPayload>('bootstrap');
-  config = boot.config ?? defaultConfig(newId());
+  if (boot.config) {
+    // 老配置文件可能没有新增字段（例如 theme），用 zod 补默认值
+    const parsed = zAppConfig.safeParse(boot.config);
+    config = parsed.success ? parsed.data : boot.config;
+  } else {
+    config = defaultConfig(newId());
+  }
   if (!boot.config) {
     await invoke('save_config', { config });
   }
@@ -295,6 +331,7 @@ async function initialize(): Promise<void> {
   });
   engine.restore(boot.snapshot);
   counts = await invoke('read_history_counts', { dayKey: todayKey() });
+  countsDayKey = todayKey();
 }
 
 function wireEvents(): void {
@@ -331,6 +368,14 @@ const api: DesktopApi = {
   getStatus: async () => computeStatus(),
   planPreview: async (horizonMs: number): Promise<PlannedTrigger[]> => engine.plan(horizonMs),
   importIcon,
+  importAsset,
+  patchTheme,
+  openDataDir: async (): Promise<void> => {
+    await invoke('open_data_dir');
+  },
+  openProjectPage: async (): Promise<void> => {
+    await invoke('open_project_page');
+  },
   onStatus: (cb) => {
     statusListeners.add(cb);
     return () => {

@@ -33,6 +33,17 @@ pub fn debug_report(state: State<'_, AppState>, message: String) {
     debug_log(&state, &message);
 }
 
+/// 用资源管理器打开应用自己的数据目录。
+/// 只允许打开应用自己的路径，不接受前端传入任意路径。
+#[tauri::command]
+pub fn open_data_dir(state: State<'_, AppState>) -> Result<(), String> {
+    std::process::Command::new("explorer.exe")
+        .arg(state.store.dir())
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("打开数据目录失败：{error}"))
+}
+
 #[tauri::command]
 pub fn get_config(state: State<'_, AppState>) -> ConfigPayload {
     config_payload(&state.store)
@@ -88,8 +99,20 @@ pub fn save_snapshot(state: State<'_, AppState>, snapshot: EngineSnapshot) -> Re
 }
 
 #[tauri::command]
-pub async fn import_icon(app: AppHandle) -> Result<Option<Value>, String> {
+pub async fn import_asset(app: AppHandle, kind: String) -> Result<Option<Value>, String> {
     use tauri_plugin_dialog::DialogExt;
+
+    let (title, extensions): (&str, Vec<&'static str>) = match kind.as_str() {
+        "icon" => (
+            "选择提醒图标",
+            vec!["png", "jpg", "jpeg", "webp", "gif", "svg"],
+        ),
+        "background" => (
+            "选择背景图片",
+            vec!["png", "jpg", "jpeg", "webp"],
+        ),
+        _ => return Err(format!("未知的资源类型：{kind}")),
+    };
 
     let app_for_dialog = app.clone();
     // blocking_pick_file 会阻塞当前线程，必须丢到 blocking 线程池，不能占用主线程
@@ -97,7 +120,7 @@ pub async fn import_icon(app: AppHandle) -> Result<Option<Value>, String> {
         app_for_dialog
             .dialog()
             .file()
-            .add_filter("图片", &["png", "jpg", "jpeg", "webp", "gif", "svg"])
+            .add_filter(title, &extensions)
             .blocking_pick_file()
     })
     .await
@@ -109,20 +132,32 @@ pub async fn import_icon(app: AppHandle) -> Result<Option<Value>, String> {
     let path = file_path.into_path().map_err(|error| error.to_string())?;
 
     let state = app.state::<AppState>();
-    let reference = state.store.import_icon(&path)?;
+    let reference = state.store.import_asset(&kind, &path)?;
     let payload = config_payload(&state.store);
     let _ = app.emit("config-changed", payload);
 
     let file_name = path
         .file_name()
         .and_then(|name| name.to_str())
-        .unwrap_or("icon")
+        .unwrap_or("asset")
         .to_string();
     Ok(Some(json!({
         "ref": reference,
-        "kind": "icon",
+        "kind": kind,
         "fileName": file_name
     })))
+}
+
+const PROJECT_URL: &str = "https://github.com/ErniuY/erniu-nudge";
+
+/// 打开项目主页（固定地址，避免前端打开任意 URL）
+#[tauri::command]
+pub fn open_project_page() -> Result<(), String> {
+    std::process::Command::new("explorer.exe")
+        .arg(PROJECT_URL)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("打开项目主页失败：{error}"))
 }
 
 #[tauri::command]
@@ -344,6 +379,14 @@ fn build_overlay_payload(
         None
     };
     let style = reminder.get("overlayStyle").cloned().unwrap_or(Value::Null);
+    let theme = store
+        .get_config()
+        .and_then(|config| config.get("theme").cloned())
+        .unwrap_or(Value::Null);
+    let background_data_url = theme
+        .get("overlayBackground")
+        .and_then(Value::as_str)
+        .and_then(|reference| store.asset_urls().get(reference).cloned());
 
     json!({
         "reminderId": event.get("reminderId").cloned().unwrap_or(Value::Null),
@@ -362,6 +405,17 @@ fn build_overlay_payload(
         "actions": reminder.get("actions").cloned().unwrap_or(json!([])),
         "snoozeMinutes": reminder.get("snoozeMinutes").cloned().unwrap_or(json!([])),
         "variables": variables,
+        "backgroundDataUrl": background_data_url,
+        "imageMode": theme.get("overlayImageMode").and_then(Value::as_str).unwrap_or("background"),
+        "backgroundFit": theme.get("overlayBackgroundFit").and_then(Value::as_str).unwrap_or("center"),
+        "backgroundDim": theme.get("overlayDim").and_then(Value::as_f64).unwrap_or(0.45),
+        "imagePosition": theme.get("overlayImagePosition").cloned().unwrap_or(json!({ "x": 76, "y": 44 })),
+        "imageScale": theme.get("overlayImageScale").and_then(Value::as_f64).unwrap_or(1.0),
+        "textPosition": theme.get("overlayTextPosition").cloned().unwrap_or(json!({ "x": 50, "y": 50 })),
+        "textAlign": theme.get("overlayTextAlign").and_then(Value::as_str).unwrap_or("left"),
+        "actionsPosition": theme.get("overlayActionsPosition").cloned().unwrap_or(json!({ "x": 50, "y": 76 })),
+        "actionsDirection": theme.get("overlayActionsDirection").and_then(Value::as_str).unwrap_or("horizontal"),
+        "cardTransparent": theme.get("overlayCardTransparent").and_then(Value::as_bool).unwrap_or(false),
     })
 }
 

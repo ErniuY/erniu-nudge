@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { zReminder } from './reminder';
+import { zAssetRef, zReminder } from './reminder';
 import { APP_DEFAULTS } from './appDefaults';
 
 export const zGlobalSettings = z.object({
@@ -27,9 +27,59 @@ export const zGlobalSettings = z.object({
 });
 
 export const zAssetEntry = z.object({
-  kind: z.enum(['icon', 'sound']),
+  kind: z.enum(['icon', 'sound', 'background']),
   /** 平台标识 → 相对路径，例如 { win: 'assets/icons/8f3a2c.png' } */
   files: z.record(z.string(), z.string()),
+});
+
+export const zOverlayTextPosition = z.object({
+  x: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayTextPosition.x),
+  y: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayTextPosition.y),
+});
+
+export const zOverlayImageMode = z.enum(['background', 'character']);
+export const zOverlayBackgroundFit = z.enum(['stretch', 'center', 'left', 'right']);
+export const zOverlayActionsDirection = z.enum(['horizontal', 'vertical']);
+
+export const zOverlayImagePosition = z.object({
+  x: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayImagePosition.x),
+  y: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayImagePosition.y),
+});
+
+export const zOverlayActionsPosition = z.object({
+  x: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayActionsPosition.x),
+  y: z.number().min(0).max(100).default(APP_DEFAULTS.theme.overlayActionsPosition.y),
+});
+
+/** 外观主题：首页与悬浮卡片的背景图、文字位置 */
+export const zThemeSettings = z.object({
+  homeBackground: zAssetRef.nullable().default(APP_DEFAULTS.theme.homeBackground),
+  homeDim: z.number().min(0).max(0.9).default(APP_DEFAULTS.theme.homeDim),
+  overlayBackground: zAssetRef.nullable().default(APP_DEFAULTS.theme.overlayBackground),
+  overlayImageMode: zOverlayImageMode.default(APP_DEFAULTS.theme.overlayImageMode),
+  overlayBackgroundFit: zOverlayBackgroundFit.default(
+    APP_DEFAULTS.theme.overlayBackgroundFit,
+  ),
+  overlayDim: z.number().min(0).max(0.9).default(APP_DEFAULTS.theme.overlayDim),
+  overlayImagePosition: zOverlayImagePosition.default(
+    APP_DEFAULTS.theme.overlayImagePosition,
+  ),
+  overlayImageScale: z.number().min(0.4).max(1.8).default(
+    APP_DEFAULTS.theme.overlayImageScale,
+  ),
+  overlayTextPosition: zOverlayTextPosition.default(APP_DEFAULTS.theme.overlayTextPosition),
+  overlayTextAlign: z
+    .enum(['left', 'center', 'right'])
+    .default(APP_DEFAULTS.theme.overlayTextAlign),
+  overlayActionsPosition: zOverlayActionsPosition.default(
+    APP_DEFAULTS.theme.overlayActionsPosition,
+  ),
+  overlayActionsDirection: zOverlayActionsDirection.default(
+    APP_DEFAULTS.theme.overlayActionsDirection,
+  ),
+  overlayCardTransparent: z.boolean().default(
+    APP_DEFAULTS.theme.overlayCardTransparent,
+  ),
 });
 
 export const zAppConfig = z.object({
@@ -37,11 +87,17 @@ export const zAppConfig = z.object({
   deviceId: z.string().min(1),
   updatedAt: z.string().datetime({ offset: true }),
   global: zGlobalSettings,
+  theme: zThemeSettings.default({}),
   reminders: z.array(zReminder),
   assets: z.record(z.string(), zAssetEntry).default({}),
 });
 
 export type GlobalSettings = z.infer<typeof zGlobalSettings>;
+export type ThemeSettings = z.infer<typeof zThemeSettings>;
+export type OverlayTextPosition = z.infer<typeof zOverlayTextPosition>;
+export type OverlayImageMode = z.infer<typeof zOverlayImageMode>;
+export type OverlayBackgroundFit = z.infer<typeof zOverlayBackgroundFit>;
+export type OverlayActionsDirection = z.infer<typeof zOverlayActionsDirection>;
 export type AppConfig = z.infer<typeof zAppConfig>;
 export type AssetEntry = z.infer<typeof zAssetEntry>;
 

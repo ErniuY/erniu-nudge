@@ -21,6 +21,9 @@ pub struct ConfigStore {
 pub struct EngineSnapshot {
     pub active_seconds: f64,
     pub last_tick_at: Option<i64>,
+    /// 当前已离开的秒数。老版本 state.json 没有这个字段，用 default 兜底
+    #[serde(default)]
+    pub idle_seconds: f64,
 }
 
 impl Default for EngineSnapshot {
@@ -28,6 +31,7 @@ impl Default for EngineSnapshot {
         Self {
             active_seconds: 0.0,
             last_tick_at: None,
+            idle_seconds: 0.0,
         }
     }
 }
@@ -141,25 +145,36 @@ impl ConfigStore {
         out
     }
 
-    /// 导入图标：复制进数据目录，返回逻辑 ID。提醒项里只存 asset:<id>，不存路径。
-    pub fn import_icon(&self, source: &Path) -> Result<String, String> {
+    /// 导入用户素材（图标或背景图）：复制进数据目录，返回逻辑 ID。
+    /// 配置里只存 asset:<id>，不存绝对路径——否则同步到其他设备会全部失效。
+    pub fn import_asset(&self, kind: &str, source: &Path) -> Result<String, String> {
+        let (extensions, max_bytes, folder, config_kind): (&[&str], u64, &str, &str) = match kind {
+            "icon" => (&["png", "jpg", "jpeg", "webp", "gif", "svg"], 1024 * 1024, "icons", "icon"),
+            "background" => (&["png", "jpg", "jpeg", "webp"], 8 * 1024 * 1024, "backgrounds", "background"),
+            _ => return Err(format!("未知的资源类型：{kind}")),
+        };
+
         let extension = source
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("")
             .to_lowercase();
-        if !["png", "jpg", "jpeg", "webp", "gif", "svg"].contains(&extension.as_str()) {
+        if !extensions.contains(&extension.as_str()) {
             return Err(format!("不支持的图片格式：{extension}"));
         }
         let size = fs::metadata(source)
             .map_err(|e| format!("读取图片失败：{e}"))?
             .len();
-        if size > 1024 * 1024 {
-            return Err(format!("图片过大（{} KB），请控制在 1 MB 以内", size / 1024));
+        if size > max_bytes {
+            return Err(format!(
+                "图片过大（{} MB），请控制在 {} MB 以内",
+                size / (1024 * 1024),
+                max_bytes / (1024 * 1024)
+            ));
         }
 
-        let icons_dir = self.dir.join("assets").join("icons");
-        fs::create_dir_all(&icons_dir).map_err(|e| e.to_string())?;
+        let target_dir = self.dir.join("assets").join(folder);
+        fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
 
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -168,7 +183,7 @@ impl ConfigStore {
         let id = format!("{nanos:x}");
         let id = &id[id.len().saturating_sub(12)..];
         let file_name = format!("{id}.{extension}");
-        fs::copy(source, icons_dir.join(&file_name)).map_err(|e| format!("复制图片失败：{e}"))?;
+        fs::copy(source, target_dir.join(&file_name)).map_err(|e| format!("复制图片失败：{e}"))?;
 
         let reference = format!("asset:{id}");
         let mut current = self
@@ -178,8 +193,8 @@ impl ConfigStore {
             current["assets"] = json!({});
         }
         current["assets"][&reference] = json!({
-            "kind": "icon",
-            "files": { "win": format!("assets/icons/{file_name}") }
+            "kind": config_kind,
+            "files": { "win": format!("assets/{folder}/{file_name}") }
         });
         self.set_config(current)?;
         Ok(reference)

@@ -25,8 +25,30 @@ export type {
   CalendarKind,
 } from './reminder';
 
-export { zGlobalSettings, zAssetEntry, zAppConfig, parseConfig } from './config';
-export type { GlobalSettings, AppConfig, AssetEntry, ParseResult } from './config';
+export {
+  zGlobalSettings,
+  zAssetEntry,
+  zThemeSettings,
+  zOverlayTextPosition,
+  zOverlayImageMode,
+  zOverlayBackgroundFit,
+  zOverlayActionsDirection,
+  zOverlayImagePosition,
+  zOverlayActionsPosition,
+  zAppConfig,
+  parseConfig,
+} from './config';
+export type {
+  GlobalSettings,
+  ThemeSettings,
+  OverlayTextPosition,
+  OverlayImageMode,
+  OverlayBackgroundFit,
+  OverlayActionsDirection,
+  AppConfig,
+  AssetEntry,
+  ParseResult,
+} from './config';
 
 export { APP_DEFAULTS } from './appDefaults';
 export type { AppDefaults } from './appDefaults';

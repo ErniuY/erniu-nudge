@@ -174,6 +174,12 @@ export function defaultConfig(deviceId: string): AppConfig {
     deviceId,
     updatedAt: nowIso(),
     global: defaultGlobalSettings(),
+    theme: {
+      ...APP_DEFAULTS.theme,
+      overlayImagePosition: { ...APP_DEFAULTS.theme.overlayImagePosition },
+      overlayTextPosition: { ...APP_DEFAULTS.theme.overlayTextPosition },
+      overlayActionsPosition: { ...APP_DEFAULTS.theme.overlayActionsPosition },
+    },
     reminders: [standUpTemplate()],
     assets: {},
   };

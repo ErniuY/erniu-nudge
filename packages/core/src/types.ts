@@ -59,6 +59,8 @@ export interface PlannedTrigger {
 export interface EngineSnapshot {
   activeSeconds: number;
   lastTickAt: number | null;
+  /** 当前已离开的秒数。跨重启保留，短离开的时长不会丢 */
+  idleSeconds?: number;
 }
 
 export interface EngineConfig {

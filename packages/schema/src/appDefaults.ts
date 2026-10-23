@@ -29,8 +29,13 @@ export const APP_DEFAULTS = {
     tickSeconds: 5,
     /** 多久没有键鼠输入算「离开」（秒） */
     idleThresholdSeconds: 120,
-    /** 离开多久后清零重新计时（秒） */
-    resetAfterIdleSeconds: 180,
+    /**
+     * 离开多久后清零重新计时（秒）。
+     * 默认 600 秒 = 10 分钟：
+     * - 离开 9 分钟 → 不清零，这 9 分钟仍作为「离开时长」被记录
+     * - 离开满 10 分钟 → 当前会话清零，回来重新开始计时
+     */
+    resetAfterIdleSeconds: 600,
     /** 关闭主窗口时最小化到托盘而不是退出 */
     minimizeToTray: true,
   },
@@ -230,6 +235,42 @@ export const APP_DEFAULTS = {
     shortMinutes: 30,
     /** 托盘与设置页的「静音 1 小时」 */
     longMinutes: 60,
+  },
+
+  // ------------------------------------------------------------------ 主题
+  theme: {
+    /** 首页 hero 背景图（asset:<id>）；null 表示使用内置渐变 */
+    homeBackground: null as string | null,
+    /** 首页背景的白色蒙版深度，越大文字越清楚、图片越淡 */
+    homeDim: 0.35,
+    /** 悬浮提醒卡片图片；按 overlayImageMode 作为背景或右侧人物使用 */
+    overlayBackground: null as string | null,
+    /**
+     * 弹窗图片用途：
+     * - background：整张图片作为卡片背景
+     * - character：作为右侧人物/插画，文字可拖到人物旁边
+     */
+    overlayImageMode: 'background' as 'background' | 'character',
+    /**
+     * 背景图适配方式：
+     * - stretch：拉伸铺满
+     * - center / left / right：保持比例完整显示，不裁切
+     */
+    overlayBackgroundFit: 'center' as 'stretch' | 'center' | 'left' | 'right',
+    /** 悬浮卡片背景的白色蒙版深度 */
+    overlayDim: 0.45,
+    /** 人物/插画图片中心在卡片中的位置（百分比） */
+    overlayImagePosition: { x: 76, y: 44 },
+    /** 人物/插画缩放比例，1 = 100% */
+    overlayImageScale: 1,
+    /** 提示文字块在卡片中的位置（百分比，0–100） */
+    overlayTextPosition: { x: 50, y: 50 },
+    overlayTextAlign: 'left' as 'left' | 'center' | 'right',
+    /** 操作按钮整组在卡片中的位置（百分比） */
+    overlayActionsPosition: { x: 50, y: 76 },
+    overlayActionsDirection: 'horizontal' as 'horizontal' | 'vertical',
+    /** 上传弹窗图片后，可去掉卡片白底、边框和阴影 */
+    overlayCardTransparent: false,
   },
 };
 

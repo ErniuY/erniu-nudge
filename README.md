@@ -86,7 +86,7 @@ pnpm --filter @app/desktop add chinese-days
 
 ## 关键设计
 
-- **久坐 ≠ 定时器**：按「有效连续使用时长」计时，离开、锁屏、休眠会清零。
+- **久坐 ≠ 定时器**：按「有效连续使用时长」计时；离开满 10 分钟（可在设置页改）或休眠唤醒会清零。不足 10 分钟的离开不清零，离开时长会累计并随快照保存，侧边栏会显示「已离开 X 分钟」。
 - **默认值集中在一处**：`packages/schema/src/appDefaults.ts`。schema 的 `.default()`、内置模板、「新建提醒」表单三处共用同一份，改一次全生效。
 - **双模式引擎**：`tick()` 供桌面实时判断，`plan()` 供 iOS 预排本地通知（iOS 不允许常驻后台定时）。
 - **信号源可插拔**：内核只认 `ActivityProvider` 接口，Windows 用键鼠空闲，iOS 将来换 CoreMotion。
